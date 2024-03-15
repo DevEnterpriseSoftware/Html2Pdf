@@ -1,7 +1,5 @@
 using Microsoft.Playwright;
-
-var builder = WebApplication.CreateSlimBuilder(args);
-var app = builder.Build();
+using System.Reflection;
 
 // Used for basic validation of the format.
 var validPrintFormats = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
@@ -22,6 +20,11 @@ var validPrintFormats = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
 using var playwright = await Playwright.CreateAsync();
 IBrowser? browser = null;
 IBrowserContext? browserContext = null;
+
+var builder = WebApplication.CreateSlimBuilder(args);
+var app = builder.Build();
+
+app.MapGet("/", () => TypedResults.Ok(Assembly.GetExecutingAssembly().GetName().Version));
 
 // Single end-point to convert HTML to PDF content.
 app.MapPost("/", async Task<IResult> (Html2PdfRequest request, CancellationToken cancellationToken) =>
