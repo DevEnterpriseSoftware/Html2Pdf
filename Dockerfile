@@ -1,16 +1,16 @@
 ARG DEBIAN_FRONTEND=noninteractive
 
-FROM mcr.microsoft.com/dotnet/aspnet:8.0-jammy AS aspnet
+FROM mcr.microsoft.com/dotnet/aspnet:9.0-noble AS aspnet
 
 # https://learn.microsoft.com/en-us/powershell/scripting/install/install-ubuntu
 RUN apt-get update && apt-get install -y wget && \
-    wget https://packages.microsoft.com/config/ubuntu/22.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb && \
+    wget https://packages.microsoft.com/config/ubuntu/24.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb && \
     dpkg -i packages-microsoft-prod.deb && \
-    rm packages-microsoft-prod.deb
-
-RUN apt-get update && apt-get install -y --no-install-recommends \
+    rm packages-microsoft-prod.deb && \
+    apt-get update && apt-get install -y --no-install-recommends \
     powershell && \
-    apt-get upgrade -y
+    apt-get upgrade -y && \
+    rm -rf /var/lib/apt/lists/*
 
 ENV ASPNETCORE_ENVIRONMENT=Production
 ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false
@@ -25,8 +25,8 @@ WORKDIR /app
 COPY . .
 RUN chown -R $APP_UID:$APP_UID .
 
-RUN mkdir /ms-playwright && pwsh ./playwright.ps1 install --with-deps chromium && chmod -R 777 /ms-playwright
-RUN apt-get remove wget powershell -y && rm -rf /var/lib/apt/lists/*
+RUN mkdir /ms-playwright && pwsh ./playwright.ps1 install --with-deps chromium && chmod -R 777 /ms-playwright && \
+    apt-get remove wget powershell -y
 
 USER $APP_UID
 EXPOSE 5000

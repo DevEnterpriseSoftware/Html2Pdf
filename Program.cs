@@ -27,7 +27,7 @@ var app = builder.Build();
 app.MapGet("/", () => TypedResults.Ok(Assembly.GetExecutingAssembly().GetName().Version));
 
 // Single end-point to convert HTML to PDF content.
-app.MapPost("/", async Task<IResult> (Html2PdfRequest request, CancellationToken cancellationToken) =>
+app.MapPost("/", async Task<IResult> (Html2PdfRequest request) =>
 {
   if (browser is not null && !browser.IsConnected)
   {
@@ -43,7 +43,7 @@ app.MapPost("/", async Task<IResult> (Html2PdfRequest request, CancellationToken
 
   browser ??= await playwright.Chromium.LaunchAsync(new()
   {
-    Args = ["--disable-dev-shm-usage", "--no-first-run"], 
+    Args = ["--disable-dev-shm-usage", "--no-first-run"],
   });
 
   browserContext ??= await browser.NewContextAsync(new()
@@ -82,6 +82,6 @@ app.MapPost("/", async Task<IResult> (Html2PdfRequest request, CancellationToken
   }
 });
 
-app.Run();
+await app.RunAsync();
 
 sealed record Html2PdfRequest(string Html, string? FileName, string? Format = "Letter");
