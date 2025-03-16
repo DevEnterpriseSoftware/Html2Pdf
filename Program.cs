@@ -4,17 +4,8 @@ using System.Reflection;
 // Used for basic validation of the format.
 var validPrintFormats = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
 {
-  "Letter",
-  "Legal",
-  "Tabloid",
-  "Ledger",
-  "A0",
-  "A1",
-  "A2",
-  "A3",
-  "A4",
-  "A5",
-  "A6"
+  "Letter", "Legal", "Tabloid", "Ledger",
+  "A0", "A1", "A2", "A3", "A4", "A5", "A6",
 };
 
 using var playwright = await Playwright.CreateAsync();
@@ -29,7 +20,7 @@ app.MapGet("/", () => TypedResults.Ok(Assembly.GetExecutingAssembly().GetName().
 // Single end-point to convert HTML to PDF content.
 app.MapPost("/", async Task<IResult> (Html2PdfRequest request) =>
 {
-  if (browser is not null && !browser.IsConnected)
+  if (browser?.IsConnected == false)
   {
     if (browserContext is not null)
     {
@@ -43,7 +34,8 @@ app.MapPost("/", async Task<IResult> (Html2PdfRequest request) =>
 
   browser ??= await playwright.Chromium.LaunchAsync(new()
   {
-    Args = ["--disable-dev-shm-usage", "--no-first-run"],
+    Args = ["--disable-dev-shm-usage", "--no-first-run", "--no-sandbox", "--disable-setuid-sandbox"],
+    Headless = true,
   });
 
   browserContext ??= await browser.NewContextAsync(new()
@@ -51,6 +43,7 @@ app.MapPost("/", async Task<IResult> (Html2PdfRequest request) =>
     ViewportSize = new() { Height = 800, Width = 600 },
     AcceptDownloads = false,
     JavaScriptEnabled = false,
+    BypassCSP = true,
     ServiceWorkers = ServiceWorkerPolicy.Block,
   });
 
@@ -58,12 +51,13 @@ app.MapPost("/", async Task<IResult> (Html2PdfRequest request) =>
 
   try
   {
-    await page.SetContentAsync(request.Html ?? string.Empty);
+    await page.SetContentAsync(request.Html ?? string.Empty, new() { Timeout = 30000 });
 
     var pdfBytes = await page.PdfAsync(new()
     {
       Format = validPrintFormats.Contains(request.Format ?? string.Empty) ? request.Format : "Letter",
       PrintBackground = true,
+      Scale = 1,
       Path = null
     });
 
