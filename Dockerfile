@@ -23,17 +23,20 @@ RUN apt-get update && \
     apt-get update && \
     apt-get install -y --no-install-recommends powershell && \
     apt-get upgrade -y && \
-    # Create Playwright directory and install browsers
-    mkdir /ms-playwright && \
+    # Clean package lists to reduce layer size
+    rm -rf /var/lib/apt/lists/*
+
+COPY --chown=$APP_UID:$APP_UID . .
+
+RUN mkdir /ms-playwright && \
     pwsh ./playwright.ps1 install --with-deps chromium && \
     chmod -R 777 /ms-playwright && \
     # Clean up to reduce image size
+    apt-get update && \
     apt-get remove wget powershell -y && \
     apt-get autoremove -y && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-
-COPY --chown=$APP_UID:$APP_UID . .
 
 USER $APP_UID
 EXPOSE 5000
